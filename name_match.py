@@ -27,19 +27,13 @@ def find_best_match(ori_str, str_set):
     return best_factor, best_str
 
 
-def find_match(str):
-    conn_b = psycopg2.connect(database="place_names", user=USERNAME, password=PASSWORD, host=HOST, port=PORT)
-    cur_b = conn_b.cursor()
+def find_match(str, cur_b):
     str = str.replace("'", " ")
     sql_str = "SELECT * FROM %s WHERE place_name LIKE '%s';" % ("national_place_names", "%"+str+"%")
     cur_b.execute(sql_str)
     rows = cur_b.fetchall()
 
     best_factor, best_str = find_best_match(str, rows)
-
-    conn_b.commit()
-    cur_b.close()
-    conn_b.close()
 
     if best_factor > MATCH_LEVEL:
         print best_factor, best_str
@@ -50,15 +44,17 @@ def name_match(db_name, tb_name, idx):
     conn_a = psycopg2.connect(database=db_name, user=USERNAME, password=PASSWORD, host=HOST, port=PORT)
     cur_a = conn_a.cursor()
 
+    conn_b = psycopg2.connect(database="place_names", user=USERNAME, password=PASSWORD, host=HOST, port=PORT)
+    cur_b = conn_b.cursor()
+
     sql_str = "SELECT * FROM %s;" % tb_name
     cur_a.execute(sql_str)
     rows = cur_a.fetchall()
-    conn_a.commit()
 
     for i in rows:
         if i[idx] is not None and i[idx] != "":
             # print i[idx]
-            best_factor, best_str = find_match(i[idx])
+            best_factor, best_str = find_match(i[idx], cur_b)
             if best_factor > MATCH_LEVEL:
                 best_str = i[idx] + "(" + best_str + ")"
                 update_str = "UPDATE %s SET name=%s WHERE osm_id=%s;" % (tb_name, "'"+best_str+"'", i[0])
@@ -66,7 +62,8 @@ def name_match(db_name, tb_name, idx):
                 cur_a.execute(update_str)
                 conn_a.commit()
 
-    # conn_a.commit()
+    cur_b.close()
+    conn_b.close()
     cur_a.close()
     conn_a.close()
 
