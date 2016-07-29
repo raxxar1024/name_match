@@ -36,7 +36,7 @@ def find_match(str, cur_b):
     best_factor, best_str = find_best_match(str, rows)
 
     if best_factor > MATCH_LEVEL:
-        print best_factor, best_str
+        print best_factor, str, best_str
     return best_factor, best_str
 
 
