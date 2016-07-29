@@ -16,7 +16,7 @@ def find_best_match(ori_str, str_set):
     best_factor = 0.0
 
     for str in str_set:
-        factor = float(len(ori_str))/float(len(str[1]))
+        factor = float(len(ori_str))/float(len(str[1].strip()))
         if factor > MATCH_LEVEL:
             if factor > best_factor:
                 best_str = str[3]
@@ -54,7 +54,7 @@ def name_match(db_name, tb_name, idx):
     for i in rows:
         if i[idx] is not None and i[idx] != "":
             # print i[idx]
-            best_factor, best_str = find_match(i[idx], cur_b)
+            best_factor, best_str = find_match(i[idx].strip(), cur_b)
             if best_factor > MATCH_LEVEL:
                 best_str = i[idx] + "(" + best_str + ")"
                 update_str = "UPDATE %s SET name=%s WHERE osm_id=%s;" % (tb_name, "'"+best_str+"'", i[0])
