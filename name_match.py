@@ -5,10 +5,11 @@ import psycopg2
 
 USERNAME = "postgres"
 PASSWORD = "123456"
+# HOST = "127.0.0.1"
 HOST = "192.168.1.248"
 PORT = "5432"
 
-MATCH_LEVEL = 0.7
+MATCH_LEVEL = 0.8
 
 
 def find_best_match(ori_str, str_set):
@@ -37,26 +38,26 @@ def find_match(str, cur_b):
 
     if best_factor > MATCH_LEVEL:
         print best_factor, str, best_str
-    return best_factor, best_str
+    return best_factor, best_str, str
 
 
-def name_match(db_name, tb_name, idx):
+def name_match(db_name, tb_name, idx, start_id, stop_id):
     conn_a = psycopg2.connect(database=db_name, user=USERNAME, password=PASSWORD, host=HOST, port=PORT)
     cur_a = conn_a.cursor()
 
     conn_b = psycopg2.connect(database="place_names", user=USERNAME, password=PASSWORD, host=HOST, port=PORT)
     cur_b = conn_b.cursor()
 
-    sql_str = "SELECT * FROM %s;" % tb_name
+    sql_str = "SELECT * FROM %s WHERE LENGTH(name)> 3 and osm_id>=%d and osm_id<%d;" % (tb_name, start_id, stop_id)
     cur_a.execute(sql_str)
     rows = cur_a.fetchall()
 
     for i in rows:
         if i[idx] is not None and i[idx] != "":
             # print i[idx]
-            best_factor, best_str = find_match(i[idx].strip(), cur_b)
+            best_factor, best_str, old_str = find_match(i[idx].strip(), cur_b)
             if best_factor > MATCH_LEVEL:
-                best_str = i[idx] + "(" + best_str + ")"
+                best_str = old_str + "(" + best_str + ")"
                 update_str = "UPDATE %s SET name=%s WHERE osm_id=%s;" % (tb_name, "'"+best_str+"'", i[0])
                 print update_str
                 cur_a.execute(update_str)
@@ -68,7 +69,10 @@ def name_match(db_name, tb_name, idx):
     conn_a.close()
 
 if __name__ == "__main__":
-    # name_match("gis", "planet_osm_line", 38)
-    name_match("gis", "planet_osm_point", 40)
-    # name_match("gis", "planet_osm_polygon", 38)
-    # name_match("gis", "planet_osm_roads", 38)
+    max_osm_id = 10000000000
+    step = 100000
+    for i in range(1, max_osm_id, step):
+        # name_match("gis", "planet_osm_line", 38, i, i+step)
+        name_match("gis", "planet_osm_point", 40, i, i+step)
+        # name_match("gis", "planet_osm_polygon", 38, i, i+step)
+        # name_match("gis", "planet_osm_roads", 38, i, i+step)
